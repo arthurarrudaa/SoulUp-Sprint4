@@ -1,4 +1,4 @@
-# SoulUp API — Sprint 3
+# SoulUp API — Sprint 4
 
 API REST em Java 21 e Spring Boot, com persistência Oracle e camadas de entidades, DAO, BO e Resource.
 
