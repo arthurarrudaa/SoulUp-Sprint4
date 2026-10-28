@@ -1,0 +1,43 @@
+### 1. Verificar se a API está online
+GET http://localhost:8080/api/status
+
+### 2. Listar usuários
+GET http://localhost:8080/api/usuarios
+
+### 3. Cadastrar usuário de teste
+POST http://localhost:8080/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Usuario Teste Sprint",
+  "email": "teste.sprint3.soulup@example.com",
+  "senha": "SenhaTeste123",
+  "pontos": 0
+}
+
+### 4. Buscar usuário de teste pelo e-mail
+GET http://localhost:8080/api/usuarios/teste.sprint3.soulup@example.com
+
+### 5. Atualizar usuário de teste
+PUT http://localhost:8080/api/usuarios/teste.sprint3.soulup@example.com
+Content-Type: application/json
+
+{
+  "nome": "Usuario Teste Atualizado",
+  "email": "teste.sprint3.soulup@example.com",
+  "senha": "SenhaTeste123",
+  "pontos": 10
+}
+
+### 6. Excluir usuário de teste
+DELETE http://localhost:8080/api/usuarios/teste.sprint3.soulup@example.com
+
+
+### 7. Testar login com usuário de teste
+POST http://localhost:8080/api/usuarios/login
+Content-Type: application/json
+
+{
+  "email": "teste.sprint3.soulup@example.com",
+  "senha": "SenhaTeste123"
+}
