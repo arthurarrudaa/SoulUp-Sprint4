@@ -1,0 +1,181 @@
+# Para testar no Render, troque a linha abaixo pela URL do deploy.
+@baseUrl = http://localhost:8080
+# @baseUrl = https://soulup-api-78mu.onrender.com
+
+@email = teste.final.soulup@example.com
+@missao = Pedalada Verde
+@voucher = SOULUP9999
+
+### 1. Status da API
+GET {{baseUrl}}/api/status
+
+### 2. Status da API + banco
+GET {{baseUrl}}/api/status/banco
+
+### ===================== USUÁRIOS =====================
+
+### 3. Cadastrar usuário (201)
+POST {{baseUrl}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Usuario Teste Final",
+  "email": "{{email}}",
+  "senha": "SenhaTeste123"
+}
+
+### 4. Cadastrar o mesmo e-mail de novo (409)
+POST {{baseUrl}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Usuario Teste Final",
+  "email": "{{email}}",
+  "senha": "SenhaTeste123"
+}
+
+### 5. Cadastro inválido (400)
+POST {{baseUrl}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "",
+  "email": "email-invalido",
+  "senha": ""
+}
+
+### 6. Listar usuários
+GET {{baseUrl}}/api/usuarios
+
+### 7. Consultar usuário
+GET {{baseUrl}}/api/usuarios/{{email}}
+
+### 8. Login correto (200)
+POST {{baseUrl}}/api/usuarios/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "SenhaTeste123"
+}
+
+### 9. Login com senha errada (401)
+POST {{baseUrl}}/api/usuarios/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "senha-errada"
+}
+
+### 10. Atualizar usuário (senha em branco mantém a atual)
+PUT {{baseUrl}}/api/usuarios/{{email}}
+Content-Type: application/json
+
+{
+  "nome": "Usuario Teste Atualizado",
+  "pontos": 0
+}
+
+### ===================== MISSÕES =====================
+
+### 11. Listar missões
+GET {{baseUrl}}/api/missoes
+
+### 12. Cadastrar missão (201)
+POST {{baseUrl}}/api/missoes
+Content-Type: application/json
+
+{
+  "nome": "Missao Teste Final",
+  "descricao": "Missão criada para teste da API",
+  "pontos": 100,
+  "transporte": "Bicicleta",
+  "co2": 2.5,
+  "diaria": true
+}
+
+### 13. Consultar missão
+GET {{baseUrl}}/api/missoes/Missao Teste Final
+
+### 14. Atualizar missão
+PUT {{baseUrl}}/api/missoes/Missao Teste Final
+Content-Type: application/json
+
+{
+  "descricao": "Descrição atualizada",
+  "pontos": 120,
+  "transporte": "Bicicleta",
+  "co2": 3.0,
+  "diaria": true
+}
+
+### 15. Concluir missão (201) — rode duas vezes: a segunda deve dar 409 (missão diária)
+POST {{baseUrl}}/api/missoes/Missao Teste Final/conclusoes?email={{email}}
+
+### 16. Conferir os pontos do usuário
+GET {{baseUrl}}/api/usuarios/{{email}}
+
+### ===================== VOUCHERS =====================
+
+### 17. Cadastrar voucher (201)
+POST {{baseUrl}}/api/vouchers
+Content-Type: application/json
+
+{
+  "codigo": "{{voucher}}",
+  "descricao": "Voucher de teste",
+  "pontos": 50,
+  "valor": 10.0
+}
+
+### 18. Listar vouchers
+GET {{baseUrl}}/api/vouchers
+
+### 19. Consultar voucher
+GET {{baseUrl}}/api/vouchers/{{voucher}}
+
+### 20. Atualizar voucher
+PUT {{baseUrl}}/api/vouchers/{{voucher}}
+Content-Type: application/json
+
+{
+  "descricao": "Voucher de teste atualizado",
+  "pontos": 50,
+  "valor": 12.5
+}
+
+### 21. Resgatar voucher (201) — desconta pontos e grava histórico
+POST {{baseUrl}}/api/vouchers/{{voucher}}/resgates?email={{email}}
+
+### ===================== HISTÓRICO =====================
+
+### 22. Listar histórico do usuário
+GET {{baseUrl}}/api/historicos?email={{email}}
+
+### 23. Atualizar registro de histórico
+PUT {{baseUrl}}/api/historicos/{{voucher}}?email={{email}}
+Content-Type: application/json
+
+{
+  "codigo": "{{voucher}}",
+  "pontos": 50,
+  "data": "2026-10-29"
+}
+
+### 24. Excluir registro de histórico (204)
+DELETE {{baseUrl}}/api/historicos/{{voucher}}?email={{email}}
+
+### ===================== LIMPEZA =====================
+
+### 25. Excluir voucher de teste (204)
+DELETE {{baseUrl}}/api/vouchers/{{voucher}}
+
+### 26. Excluir missão de teste (409 se já houver conclusões registradas; é esperado)
+DELETE {{baseUrl}}/api/missoes/Missao Teste Final
+
+### 27. Excluir usuário de teste (409 se ainda houver missões/histórico vinculados; é esperado)
+DELETE {{baseUrl}}/api/usuarios/{{email}}
+
+### 28. Rota inexistente (404)
+GET {{baseUrl}}/api/rota-que-nao-existe
