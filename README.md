@@ -1,37 +1,67 @@
 # SoulUp API — Entrega Final
 
 API RESTful em **Java 21 + Spring Boot 3.4** para o projeto Eco Mobility SoulUp, com persistência em **Oracle** via JDBC.
+
 Usuários ganham pontos ao concluir missões de mobilidade sustentável e trocam esses pontos por vouchers.
+
+## Status da entrega
+
+- **Build Maven:** concluído com sucesso (`mvn clean package`).
+- **Deploy:** publicado com sucesso no Render.
+- **Banco de dados:** conexão Oracle online.
+- **Conclusão de missão:** transação testada com sucesso.
+- **Resgate de voucher:** transação testada com sucesso.
+- **Frontend React:** institucional, ainda sem integração com a API.
+
+### API publicada
+
+URL: https://soulup-api-78mu.onrender.com
+
+Verificação da aplicação e do banco:
+
+https://soulup-api-78mu.onrender.com/api/status/banco
+
+Resultado verificado:
+
+```json
+{
+  "banco": "online",
+  "aplicacao": "SoulUp API"
+}
+```
 
 ## Arquitetura
 
-```
+```text
 br.com.fiap
-├── config      CorsFilter                      (liberação de CORS para o front-end)
-├── conexao     ConexaoFactory                  (Connection Factory do Oracle)
-├── entities    Usuario, Missao, Voucher, Historico   (camada modelo)
+├── config      CorsFilter
+├── conexao     ConexaoFactory
+├── entities    Usuario, Missao, Voucher, Historico
 ├── dto         LoginRequest e respostas de conclusão/resgate
-├── dao         UsuarioDAO, MissaoDAO, VoucherDAO, HistoricoDAO, MissaoUsuarioDAO
-├── bo          UsuarioBO, MissaoBO, VoucherBO, HistoricoBO   (validações e regras de negócio)
-├── exception   exceções de negócio (404, 409, 400, 401)
-└── resource    endpoints REST + GlobalExceptionHandler
+├── dao         UsuarioDAO, MissaoDAO, VoucherDAO,
+│               HistoricoDAO, MissaoUsuarioDAO
+├── bo          UsuarioBO, MissaoBO, VoucherBO, HistoricoBO
+├── exception   Exceções de negócio
+└── resource    Endpoints REST + GlobalExceptionHandler
 ```
 
 Fluxo de uma requisição: **Resource → BO → DAO → ConexaoFactory → Oracle**.
 
-- **Resource**: só recebe a requisição e devolve a resposta. Não tem regra de negócio.
-- **BO**: valida os dados e aplica as regras (e-mail único, missão diária uma vez por dia, saldo de pontos, etc.).
-- **DAO**: SQL com `PreparedStatement`; cada método abre e fecha a própria conexão (`try-with-resources`).
-- **GlobalExceptionHandler**: único lugar que converte exceções em status HTTP, sempre no formato `{"erro": "mensagem"}`.
+- **Resource**: recebe a requisição e devolve a resposta. Não contém regras de negócio.
+- **BO**: valida os dados e aplica as regras (e-mail único, missão diária uma vez por dia, saldo de pontos etc.).
+- **DAO**: executa SQL com `PreparedStatement`; cada método abre e fecha a própria conexão com `try-with-resources`.
+- **GlobalExceptionHandler**: converte exceções em status HTTP, no formato `{"erro": "mensagem"}`.
 
 ### Regras de negócio principais
-- Usuário novo sempre começa com 0 pontos; o e-mail é único e não pode ser alterado.
-- Concluir missão e resgatar voucher rodam em **transação**: registro, pontos e histórico são gravados juntos ou nada é gravado.
+
+- Usuário novo começa com 0 pontos; o e-mail é único e não pode ser alterado.
+- Concluir missão e resgatar voucher são operações transacionais: registro, pontos e histórico são gravados juntos ou nada é gravado.
 - Missão diária só pode ser concluída uma vez por dia por usuário (409 se repetir).
-- O desconto de pontos é condicionado ao saldo no próprio `UPDATE`, então o saldo nunca fica negativo.
+- O desconto de pontos é condicionado ao saldo no próprio `UPDATE`, evitando saldo negativo.
 - A senha nunca é devolvida nas respostas.
 
 ## Requisitos
+
 - JDK 21
 - Maven 3.9+
 - Acesso ao Oracle e às tabelas `USUARIO`, `MISSAO`, `VOUCHER`, `HISTORICO` e `MISSAO_USUARIO`
@@ -40,41 +70,53 @@ Fluxo de uma requisição: **Resource → BO → DAO → ConexaoFactory → Orac
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
-| `SOULUP_DB_USER` | sim | Usuário do Oracle |
-| `SOULUP_DB_PASSWORD` | sim | Senha do Oracle |
-| `SOULUP_DB_URL` | não | URL JDBC (padrão: `jdbc:oracle:thin:@oracle.fiap.com.br:1521:orcl`) |
-| `PORT` | não | Porta HTTP (padrão `8080`; o Render define automaticamente) |
+| `SOULUP_DB_USER` | Sim | Usuário do Oracle |
+| `SOULUP_DB_PASSWORD` | Sim | Senha do Oracle |
+| `SOULUP_DB_URL` | Não | URL JDBC (padrão: `jdbc:oracle:thin:@oracle.fiap.com.br:1521:orcl`) |
+| `PORT` | Não | Porta HTTP (padrão `8080`; o Render define automaticamente) |
 
 Nenhuma credencial fica no código.
 
 ## Executar localmente
 
+Linux/macOS:
+
 ```bash
-# Linux/macOS
 export SOULUP_DB_USER=seu_usuario
 export SOULUP_DB_PASSWORD=sua_senha
 mvn spring-boot:run
 ```
 
+Windows (PowerShell):
+
 ```powershell
-# Windows (PowerShell)
 $env:SOULUP_DB_USER="seu_usuario"
 $env:SOULUP_DB_PASSWORD="sua_senha"
 mvn spring-boot:run
 ```
 
-Gerar o JAR: `mvn clean package` e depois `java -jar target/soulup-api-1.0.0.jar`.
+Gerar o JAR:
+
+```bash
+mvn clean package
+java -jar target/soulup-api-1.0.0.jar
+```
 
 Verificação rápida:
-- `GET /api/status` → a aplicação está no ar.
-- `GET /api/status/banco` → a aplicação também conseguiu consultar o banco (200 ou 503).
+
+- `GET /api/status` → verifica se a aplicação está no ar.
+- `GET /api/status/banco` → verifica a conexão com o banco (200 ou 503).
 
 ## Deploy (Render)
-1. Criar um *Web Service* a partir do repositório (ambiente **Docker**; o `Dockerfile` já está na raiz).
-2. Em *Environment*, definir `SOULUP_DB_USER`, `SOULUP_DB_PASSWORD` e, se necessário, `SOULUP_DB_URL`.
-3. Após o deploy, validar com `GET {url}/api/status/banco`.
 
-> No plano gratuito do Render a primeira requisição após um período sem uso pode levar cerca de 1 minuto.
+1. Criar um Web Service a partir do repositório, usando o ambiente **Docker**.
+2. O `Dockerfile` fica na raiz do projeto.
+3. Em **Environment**, configurar `SOULUP_DB_USER`, `SOULUP_DB_PASSWORD` e, se necessário, `SOULUP_DB_URL`.
+4. Após o deploy, validar com `GET {url}/api/status/banco`.
+
+**Deploy realizado com sucesso:** serviço publicado e com conexão Oracle confirmada.
+
+> No plano gratuito do Render, a primeira requisição após um período sem uso pode levar cerca de 1 minuto.
 
 ## Endpoints
 
@@ -96,7 +138,7 @@ Verificação rápida:
 | POST | `/api/missoes/{nome}/conclusoes?email=` | Concluir missão para um usuário | 201 |
 | GET | `/api/vouchers` | Listar vouchers | 200 |
 | GET | `/api/vouchers/{codigo}` | Consultar voucher | 200 |
-| POST | `/api/vouchers` | Cadastrar voucher (código gerado se omitido) | 201 |
+| POST | `/api/vouchers` | Cadastrar voucher | 201 |
 | PUT | `/api/vouchers/{codigo}` | Atualizar voucher | 200 |
 | DELETE | `/api/vouchers/{codigo}` | Excluir voucher | 204 |
 | POST | `/api/vouchers/{codigo}/resgates?email=` | Resgatar voucher e registrar histórico | 201 |
@@ -105,7 +147,19 @@ Verificação rápida:
 | PUT | `/api/historicos/{codigo}?email=` | Atualizar registro | 200 |
 | DELETE | `/api/historicos/{codigo}?email=` | Excluir registro | 204 |
 
-Exemplos prontos para executar estão em `testes-api.http`.
+Exemplos de requisições estão no arquivo `testes-api.http`.
+
+## Testes realizados
+
+Foram realizados testes da API localmente, utilizando dados existentes no banco Oracle.
+
+- Consulta de usuários, missões e vouchers.
+- Conclusão de missão com retorno HTTP 201.
+- Resgate de voucher com retorno HTTP 201.
+- Verificação da conexão com o Oracle localmente e no Render.
+- Build com Maven concluído com sucesso.
+
+Os testes de conclusão de missão e resgate de voucher confirmaram o funcionamento das respectivas operações transacionais.
 
 ## Códigos HTTP
 
@@ -113,13 +167,13 @@ Exemplos prontos para executar estão em `testes-api.http`.
 |---|---|
 | `200 OK` | Consultas, atualizações e login |
 | `201 Created` | Cadastros, conclusão de missão e resgate de voucher |
-| `204 No Content` | Exclusões e respostas `OPTIONS` (CORS) |
-| `400 Bad Request` | Dados inválidos, JSON malformado, parâmetro obrigatório ausente |
+| `204 No Content` | Exclusões e respostas OPTIONS (CORS) |
+| `400 Bad Request` | Dados inválidos ou parâmetros obrigatórios ausentes |
 | `401 Unauthorized` | E-mail ou senha inválidos no login |
 | `404 Not Found` | Usuário, missão, voucher ou histórico inexistente |
-| `405 Method Not Allowed` | Verbo HTTP não suportado na rota |
-| `409 Conflict` | Cadastro duplicado, pontos insuficientes, missão diária repetida, registro com dependências |
-| `500 Internal Server Error` | Falha inesperada (detalhes ficam no log, nunca na resposta) |
+| `405 Method Not Allowed` | Verbo HTTP não suportado |
+| `409 Conflict` | Cadastro duplicado, pontos insuficientes ou missão diária repetida |
+| `500 Internal Server Error` | Falha inesperada |
 
 ## Tabelas e colunas usadas
 
@@ -132,5 +186,8 @@ Exemplos prontos para executar estão em `testes-api.http`.
 | `MISSAO_USUARIO` | `EMAIL`, `NOME_MISSAO`, `DATA_CONCLUSAO` |
 
 ## Observações
-- O site React entregue é institucional e ainda não faz chamadas a esta API.
-- As senhas são armazenadas como no banco original (texto puro). Em produção real, deveriam usar hash (BCrypt).
+
+- O frontend React entregue é institucional e ainda não realiza chamadas a esta API.
+- A integração entre React e API não faz parte das funcionalidades implementadas nesta entrega.
+- As senhas são armazenadas conforme o modelo original do banco de dados (texto puro). Em um ambiente de produção real, recomenda-se armazenar senhas utilizando hash seguro, como BCrypt.
+- As credenciais do banco são fornecidas por variáveis de ambiente e não devem ser publicadas no repositório.
